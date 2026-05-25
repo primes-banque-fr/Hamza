@@ -1,70 +1,44 @@
 import wave
 import json
+import os
+from vosk import Model, KaldiRecognizer
 
-try:
-    from vosk import Model, KaldiRecognizer
+MODEL_PATH = "models/vosk"
 
-    MODEL_PATH = "models/vosk"
+model = None
 
+if os.path.exists(MODEL_PATH):
     try:
         model = Model(MODEL_PATH)
-        VOSK_READY = True
-
-    except Exception:
+        print("Vosk model loaded")
+    except Exception as e:
+        print("Vosk error:", e)
         model = None
-        VOSK_READY = False
-
-except Exception:
-    Model = None
-    KaldiRecognizer = None
-    model = None
-    VOSK_READY = False
+else:
+    print("Vosk model not found, voice disabled")
 
 
 def voice_to_text(path):
 
-    if not VOSK_READY:
-        return "support vocal indisponible"
+    if model is None:
+        return ""
 
-    try:
+    wf = wave.open(path, "rb")
 
-        wf = wave.open(path, "rb")
+    rec = KaldiRecognizer(model, wf.getframerate())
 
-        rec = KaldiRecognizer(
-            model,
-            wf.getframerate()
-        )
+    text = ""
 
-        text = ""
+    while True:
 
-        while True:
+        data = wf.readframes(4000)
 
-            data = wf.readframes(4000)
+        if len(data) == 0:
+            break
 
-            if len(data) == 0:
-                break
+        if rec.AcceptWaveform(data):
+            text += json.loads(rec.Result()).get("text", "") + " "
 
-            if rec.AcceptWaveform(data):
+    text += json.loads(rec.FinalResult()).get("text", "")
 
-                result = json.loads(
-                    rec.Result()
-                )
-
-                text += (
-                    result.get("text", "")
-                    + " "
-                )
-
-        final = json.loads(
-            rec.FinalResult()
-        )
-
-        text += final.get(
-            "text",
-            ""
-        )
-
-        return text.strip()
-
-    except Exception:
-        return "message vocal reçu"
+    return text
