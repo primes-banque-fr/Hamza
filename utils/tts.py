@@ -1,6 +1,8 @@
-import edge_tts
 import asyncio
+import threading
 import uuid
+
+import edge_tts
 
 
 # ==========================================
@@ -26,9 +28,8 @@ def clean_text(text: str) -> str:
 async def generate_voice(text: str, filename: str):
     communicate = edge_tts.Communicate(
         text=text,
-        voice="fr-FR-HenriNeural"   # voix garçon français
+        voice="fr-FR-HenriNeural"
     )
-
     await communicate.save(filename)
 
 
@@ -39,15 +40,22 @@ async def generate_voice(text: str, filename: str):
 def text_to_voice(text: str) -> str:
     try:
         text = clean_text(text)
-
         filename = f"voice_{uuid.uuid4().hex}.mp3"
 
-        asyncio.run(
-            generate_voice(
-                text,
-                filename
-            )
-        )
+        error_holder = {"error": None}
+
+        def runner():
+            try:
+                asyncio.run(generate_voice(text, filename))
+            except Exception as e:
+                error_holder["error"] = e
+
+        thread = threading.Thread(target=runner)
+        thread.start()
+        thread.join()
+
+        if error_holder["error"]:
+            raise error_holder["error"]
 
         print("\n========== EDGE TTS GENERATED ==========")
         print("FILE:", filename)
