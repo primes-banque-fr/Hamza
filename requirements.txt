@@ -3,3 +3,5 @@ requests
 edge-tts
 vosk
 python-dotenv
+flask
+gunicorn
