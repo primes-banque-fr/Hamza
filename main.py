@@ -1,40 +1,169 @@
 import asyncio
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from config import BOT_TOKEN
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    filters
+)
+
+from config import (
+    BOT_TOKEN,
+    BOT_NAME
+)
 
 from bot.start import start
 from bot.buy import buy
 from bot.payment import handle_payment
-from bot.voice_handler import handle_text_message, handle_voice_message
-from admin.admin_panel import approve, reject
+
+from bot.voice_handler import (
+    handle_text_message,
+    handle_voice_message
+)
+
+from admin.admin_panel import (
+    approve,
+    reject
+)
 
 
 def main():
 
-    print("=== HMB SUPPORT AI STARTING ===")
+    print("\n==============================")
+    print(f"{BOT_NAME} STARTING")
+    print("==============================")
 
-    # 🔥 FIX PYTHON 3.14 / RENDER EVENT LOOP BUG
+    print(
+        "BOT TOKEN FOUND:",
+        bool(BOT_TOKEN)
+    )
+
+    # Fix Render / Python 3.14 event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .build()
+    )
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("buy", buy))
+    # =====================================
+    # COMMANDES
+    # =====================================
 
-    app.add_handler(CommandHandler("approve", approve))
-    app.add_handler(CommandHandler("reject", reject))
+    app.add_handler(
+        CommandHandler(
+            "start",
+            start
+        )
+    )
 
-    app.add_handler(MessageHandler(filters.PHOTO, handle_payment))
+    app.add_handler(
+        CommandHandler(
+            "buy",
+            buy
+        )
+    )
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
-    app.add_handler(MessageHandler(filters.VOICE, handle_voice_message))
+    app.add_handler(
+        CommandHandler(
+            "approve",
+            approve
+        )
+    )
 
-    print("=== BOT RUNNING ===")
+    app.add_handler(
+        CommandHandler(
+            "reject",
+            reject
+        )
+    )
 
-    app.run_polling()
+    # =====================================
+    # BOUTONS MENU
+    # =====================================
+
+    app.add_handler(
+        MessageHandler(
+            filters.Regex("^🛒 Acheter$"),
+            buy
+        )
+    )
+
+    app.add_handler(
+        MessageHandler(
+            filters.Regex("^💳 Paiement$"),
+            buy
+        )
+    )
+
+    app.add_handler(
+        MessageHandler(
+            filters.Regex("^📦 Commandes$"),
+            handle_text_message
+        )
+    )
+
+    app.add_handler(
+        MessageHandler(
+            filters.Regex("^📞 Support$"),
+            handle_text_message
+        )
+    )
+
+    # =====================================
+    # CAPTURE DE PAIEMENT
+    # =====================================
+
+    app.add_handler(
+        MessageHandler(
+            filters.PHOTO,
+            handle_payment
+        )
+    )
+
+    # =====================================
+    # MESSAGE VOCAL
+    # =====================================
+
+    app.add_handler(
+        MessageHandler(
+            filters.VOICE,
+            handle_voice_message
+        )
+    )
+
+    # =====================================
+    # MESSAGE TEXTE
+    # =====================================
+
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT
+            & ~filters.COMMAND,
+            handle_text_message
+        )
+    )
+
+    print("\n==============================")
+    print(f"{BOT_NAME} RUNNING")
+    print("==============================")
+
+    app.run_polling(
+        drop_pending_updates=True
+    )
 
 
 if __name__ == "__main__":
-    main()
+
+    try:
+        main()
+
+    except Exception as e:
+
+        print("\n========== CRASH ==========")
+        print(str(e))
+
+        import traceback
+        traceback.print_exc()
