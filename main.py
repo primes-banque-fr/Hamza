@@ -1,3 +1,6 @@
+from flask import Flask
+from threading import Thread
+
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -25,7 +28,23 @@ from admin.admin_panel import (
 )
 
 
-def main():
+# ==========================================
+# FLASK SERVER
+# ==========================================
+
+flask_app = Flask(__name__)
+
+
+@flask_app.route("/")
+def home():
+    return f"{BOT_NAME} is running!"
+
+
+# ==========================================
+# TELEGRAM BOT
+# ==========================================
+
+def run_bot():
 
     print("\n==============================")
     print(f"{BOT_NAME} STARTING")
@@ -144,18 +163,29 @@ def main():
     print(f"{BOT_NAME} RUNNING")
     print("==============================")
 
-    # IMPORTANT :
-    # Supprime ancien webhook
-    # pour éviter erreur Conflict
     app.run_polling(
         drop_pending_updates=True
     )
 
 
+# ==========================================
+# MAIN
+# ==========================================
+
 if __name__ == "__main__":
 
     try:
-        main()
+
+        bot_thread = Thread(
+            target=run_bot
+        )
+
+        bot_thread.start()
+
+        flask_app.run(
+            host="0.0.0.0",
+            port=10000
+        )
 
     except Exception as e:
 
