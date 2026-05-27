@@ -1,4 +1,7 @@
 import asyncio
+import logging
+import traceback
+
 from flask import Flask
 from threading import Thread
 
@@ -6,12 +9,12 @@ from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
-    filters
+    filters,
 )
 
 from config import (
     BOT_TOKEN,
-    BOT_NAME
+    BOT_NAME,
 )
 
 from bot.start import start
@@ -20,14 +23,27 @@ from bot.payment import handle_payment
 
 from bot.voice_handler import (
     handle_text_message,
-    handle_voice_message
+    handle_voice_message,
 )
 
 from admin.admin_panel import (
     approve,
-    reject
+    reject,
 )
 
+# ==========================================
+# LOGGING ULTRA DETAILLÉ
+# ==========================================
+
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+
+# Réduit spam httpx
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # ==========================================
 # FLASK SERVER
@@ -38,7 +54,87 @@ flask_app = Flask(__name__)
 
 @flask_app.route("/")
 def home():
+
+    logger.info("ROOT URL VISITED")
+
     return f"{BOT_NAME} is running!"
+
+
+# ==========================================
+# ERROR HANDLER
+# ==========================================
+
+async def error_handler(update, context):
+
+    logger.error("========== BOT ERROR ==========")
+
+    try:
+
+        logger.error(
+            "UPDATE: %s",
+            str(update)
+        )
+
+        logger.error(
+            "ERROR: %s",
+            str(context.error)
+        )
+
+        traceback.print_exc()
+
+    except Exception as e:
+
+        logger.error(
+            "ERROR HANDLER FAILED: %s",
+            str(e)
+        )
+
+
+# ==========================================
+# LOG UTILISATEUR
+# ==========================================
+
+async def log_all_messages(update, context):
+
+    try:
+
+        user = update.effective_user
+
+        logger.info("========== NEW MESSAGE ==========")
+
+        logger.info(
+            "USER: %s",
+            user.first_name
+        )
+
+        logger.info(
+            "USER ID: %s",
+            user.id
+        )
+
+        if update.message:
+
+            if update.message.text:
+
+                logger.info(
+                    "TEXT: %s",
+                    update.message.text
+                )
+
+            if update.message.voice:
+
+                logger.info("VOICE MESSAGE RECEIVED")
+
+            if update.message.photo:
+
+                logger.info("PHOTO RECEIVED")
+
+    except Exception as e:
+
+        logger.error(
+            "LOG MESSAGE ERROR: %s",
+            str(e)
+        )
 
 
 # ==========================================
@@ -46,24 +142,56 @@ def home():
 # ==========================================
 
 def run_bot():
-    # Python 3.14 + thread = event loop manuel obligatoire
+
+    # ======================================
+    # EVENT LOOP FIX PYTHON 3.14
+    # ======================================
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    print("\n==============================")
+    print("\n===================================")
     print(f"{BOT_NAME} STARTING")
-    print("==============================")
+    print("===================================")
 
     print(
         "BOT TOKEN FOUND:",
         bool(BOT_TOKEN)
     )
 
+    logger.info("BOT INITIALIZATION STARTED")
+
     app = (
         Application.builder()
         .token(BOT_TOKEN)
         .build()
     )
+
+    logger.info("APPLICATION CREATED")
+
+    # =====================================
+    # LOG TOUS LES MESSAGES
+    # =====================================
+
+    app.add_handler(
+        MessageHandler(
+            filters.ALL,
+            log_all_messages
+        ),
+        group=-1
+    )
+
+    logger.info("GLOBAL LOGGER ADDED")
+
+    # =====================================
+    # ERROR HANDLER
+    # =====================================
+
+    app.add_error_handler(
+        error_handler
+    )
+
+    logger.info("ERROR HANDLER ADDED")
 
     # =====================================
     # COMMANDES
@@ -76,12 +204,16 @@ def run_bot():
         )
     )
 
+    logger.info("/start COMMAND ADDED")
+
     app.add_handler(
         CommandHandler(
             "buy",
             buy
         )
     )
+
+    logger.info("/buy COMMAND ADDED")
 
     app.add_handler(
         CommandHandler(
@@ -90,12 +222,16 @@ def run_bot():
         )
     )
 
+    logger.info("/approve COMMAND ADDED")
+
     app.add_handler(
         CommandHandler(
             "reject",
             reject
         )
     )
+
+    logger.info("/reject COMMAND ADDED")
 
     # =====================================
     # BOUTONS MENU
@@ -108,12 +244,16 @@ def run_bot():
         )
     )
 
+    logger.info("BUY BUTTON ADDED")
+
     app.add_handler(
         MessageHandler(
             filters.Regex("^💳 Paiement$"),
             buy
         )
     )
+
+    logger.info("PAYMENT BUTTON ADDED")
 
     app.add_handler(
         MessageHandler(
@@ -122,12 +262,16 @@ def run_bot():
         )
     )
 
+    logger.info("ORDERS BUTTON ADDED")
+
     app.add_handler(
         MessageHandler(
             filters.Regex("^📞 Support$"),
             handle_text_message
         )
     )
+
+    logger.info("SUPPORT BUTTON ADDED")
 
     # =====================================
     # MESSAGE VOCAL
@@ -140,6 +284,8 @@ def run_bot():
         )
     )
 
+    logger.info("VOICE HANDLER ADDED")
+
     # =====================================
     # CAPTURE DE PAIEMENT
     # =====================================
@@ -150,6 +296,8 @@ def run_bot():
             handle_payment
         )
     )
+
+    logger.info("PHOTO PAYMENT HANDLER ADDED")
 
     # =====================================
     # MESSAGE TEXTE
@@ -162,14 +310,18 @@ def run_bot():
         )
     )
 
-    print("\n==============================")
-    print(f"{BOT_NAME} RUNNING")
-    print("==============================")
+    logger.info("TEXT MESSAGE HANDLER ADDED")
 
-    # IMPORTANT :
-    # - drop_pending_updates=True nettoie les anciens updates
-    # - stop_signals=None évite l'erreur "set_wakeup_fd only works in main thread"
-    # - close_loop=False évite de fermer la loop manuellement dans le thread
+    print("\n===================================")
+    print(f"{BOT_NAME} RUNNING")
+    print("===================================")
+
+    logger.info("BOT IS NOW RUNNING")
+
+    # =====================================
+    # RUN BOT
+    # =====================================
+
     app.run_polling(
         drop_pending_updates=True,
         stop_signals=None,
@@ -184,8 +336,17 @@ def run_bot():
 if __name__ == "__main__":
 
     try:
-        bot_thread = Thread(target=run_bot, daemon=True)
+
+        logger.info("STARTING BOT THREAD")
+
+        bot_thread = Thread(
+            target=run_bot,
+            daemon=True
+        )
+
         bot_thread.start()
+
+        logger.info("STARTING FLASK SERVER")
 
         flask_app.run(
             host="0.0.0.0",
@@ -195,8 +356,8 @@ if __name__ == "__main__":
         )
 
     except Exception as e:
+
         print("\n========== CRASH ==========")
         print(str(e))
 
-        import traceback
         traceback.print_exc()
