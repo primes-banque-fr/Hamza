@@ -124,17 +124,6 @@ def main():
     )
 
     # =====================================
-    # MESSAGE VOCAL
-    # =====================================
-
-    app.add_handler(
-        MessageHandler(
-            filters.VOICE,
-            handle_voice_message
-        )
-    )
-
-    # =====================================
     # MESSAGE TEXTE
     # =====================================
 
