@@ -136,11 +136,13 @@ def main():
     )
 
     print("\n==============================")
-    print(f"{BOT_NAME} RUNNING")
-    print("==============================")
+print(f"{BOT_NAME} RUNNING")
+print("==============================")
 
-    app.run_polling(
-        drop_pending_updates=True
+app.bot.delete_webhook(drop_pending_updates=True)
+
+app.run_polling(
+    drop_pending_updates=True
     )
 
 
