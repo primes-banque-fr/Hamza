@@ -1,1 +1,0 @@
-model = Model("models/vosk-model-small-fr")
