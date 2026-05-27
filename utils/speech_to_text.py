@@ -1,44 +1,98 @@
 import wave
 import json
 import os
+
 from vosk import Model, KaldiRecognizer
 
-MODEL_PATH = "models/vosk"
+
+# ==========================================
+# VOSK MODEL PATH
+# ==========================================
+
+MODEL_PATH = "models/vosk-model-small-fr"
 
 model = None
 
+
+# ==========================================
+# LOAD MODEL SAFE
+# ==========================================
+
 if os.path.exists(MODEL_PATH):
+
     try:
+
         model = Model(MODEL_PATH)
-        print("Vosk model loaded")
+
+        print("\n========== VOSK LOADED ==========")
+        print("MODEL:", MODEL_PATH)
+
     except Exception as e:
-        print("Vosk error:", e)
+
+        print("VOSK ERROR:", str(e))
+
         model = None
+
 else:
-    print("Vosk model not found, voice disabled")
+
+    print("\n========== VOSK DISABLED ==========")
+    print("MODEL NOT FOUND:", MODEL_PATH)
 
 
-def voice_to_text(path):
+# ==========================================
+# VOICE → TEXT
+# ==========================================
+
+def voice_to_text(file_path: str) -> str:
 
     if model is None:
+
+        print("VOICE RECOGNITION DISABLED")
+
         return ""
 
-    wf = wave.open(path, "rb")
 
-    rec = KaldiRecognizer(model, wf.getframerate())
+    try:
 
-    text = ""
+        wf = wave.open(file_path, "rb")
 
-    while True:
+        rec = KaldiRecognizer(
+            model,
+            wf.getframerate()
+        )
 
-        data = wf.readframes(4000)
+        result_text = ""
 
-        if len(data) == 0:
-            break
+        while True:
 
-        if rec.AcceptWaveform(data):
-            text += json.loads(rec.Result()).get("text", "") + " "
+            data = wf.readframes(4000)
 
-    text += json.loads(rec.FinalResult()).get("text", "")
+            if len(data) == 0:
+                break
 
-    return text
+            if rec.AcceptWaveform(data):
+
+                part = json.loads(
+                    rec.Result()
+                ).get("text", "")
+
+                result_text += part + " "
+
+        final_part = json.loads(
+            rec.FinalResult()
+        ).get("text", "")
+
+        result_text += final_part
+
+        result_text = result_text.strip()
+
+        print("\n========== VOICE TO TEXT ==========")
+        print("RESULT:", result_text)
+
+        return result_text
+
+    except Exception as e:
+
+        print("STT ERROR:", str(e))
+
+        return ""
