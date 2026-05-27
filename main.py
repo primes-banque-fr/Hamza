@@ -1,3 +1,5 @@
+import asyncio
+
 from flask import Flask
 from threading import Thread
 
@@ -45,6 +47,10 @@ def home():
 # ==========================================
 
 def run_bot():
+
+    # IMPORTANT POUR PYTHON 3.14
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     print("\n==============================")
     print(f"{BOT_NAME} STARTING")
@@ -163,8 +169,17 @@ def run_bot():
     print(f"{BOT_NAME} RUNNING")
     print("==============================")
 
+    # SUPPRIME LES WEBHOOKS
+    # ET EVITE ERREUR CONFLICT
+    loop.run_until_complete(
+        app.bot.delete_webhook(
+            drop_pending_updates=True
+        )
+    )
+
     app.run_polling(
-        drop_pending_updates=True
+        drop_pending_updates=True,
+        close_loop=False
     )
 
 
