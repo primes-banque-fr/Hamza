@@ -29,7 +29,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Message texte UI
     await update.message.reply_text(
-        f"🔥 {BOT_NAME}",
+        WELCOME_TEXT,
         reply_markup=ReplyKeyboardMarkup(
             MENU,
             resize_keyboard=True
