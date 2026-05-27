@@ -18,7 +18,7 @@ model = None
 # LOAD MODEL SAFE
 # ==========================================
 
-if os.path.exists(MODEL_PATH) and os.listdir(MODEL_PATH):
+if os.path.isdir(MODEL_PATH) and os.listdir(MODEL_PATH):
 
     try:
 
