@@ -1,7 +1,6 @@
 import edge_tts
 import asyncio
 import uuid
-import os
 
 
 # ==========================================
@@ -9,7 +8,6 @@ import os
 # ==========================================
 
 def clean_text(text: str) -> str:
-
     if not text:
         return " "
 
@@ -18,7 +16,7 @@ def clean_text(text: str) -> str:
     text = text.replace("`", "")
     text = text.replace("\n", " ")
 
-    return text
+    return text.strip()
 
 
 # ==========================================
@@ -26,7 +24,6 @@ def clean_text(text: str) -> str:
 # ==========================================
 
 async def generate_voice(text: str, filename: str):
-
     communicate = edge_tts.Communicate(
         text=text,
         voice="fr-FR-HenriNeural"   # voix garçon français
@@ -40,9 +37,7 @@ async def generate_voice(text: str, filename: str):
 # ==========================================
 
 def text_to_voice(text: str) -> str:
-
     try:
-
         text = clean_text(text)
 
         filename = f"voice_{uuid.uuid4().hex}.mp3"
@@ -61,7 +56,5 @@ def text_to_voice(text: str) -> str:
         return filename
 
     except Exception as e:
-
         print("EDGE TTS ERROR:", str(e))
-
         return ""
