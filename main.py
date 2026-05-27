@@ -1,5 +1,4 @@
 import asyncio
-
 from flask import Flask
 from threading import Thread
 
@@ -47,8 +46,7 @@ def home():
 # ==========================================
 
 def run_bot():
-
-    # IMPORTANT POUR PYTHON 3.14
+    # Python 3.14 + thread = event loop manuel obligatoire
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
@@ -159,8 +157,7 @@ def run_bot():
 
     app.add_handler(
         MessageHandler(
-            filters.TEXT
-            & ~filters.COMMAND,
+            filters.TEXT & ~filters.COMMAND,
             handle_text_message
         )
     )
@@ -169,16 +166,13 @@ def run_bot():
     print(f"{BOT_NAME} RUNNING")
     print("==============================")
 
-    # SUPPRIME LES WEBHOOKS
-    # ET EVITE ERREUR CONFLICT
-    loop.run_until_complete(
-        app.bot.delete_webhook(
-            drop_pending_updates=True
-        )
-    )
-
+    # IMPORTANT :
+    # - drop_pending_updates=True nettoie les anciens updates
+    # - stop_signals=None évite l'erreur "set_wakeup_fd only works in main thread"
+    # - close_loop=False évite de fermer la loop manuellement dans le thread
     app.run_polling(
         drop_pending_updates=True,
+        stop_signals=None,
         close_loop=False
     )
 
@@ -190,20 +184,17 @@ def run_bot():
 if __name__ == "__main__":
 
     try:
-
-        bot_thread = Thread(
-            target=run_bot
-        )
-
+        bot_thread = Thread(target=run_bot, daemon=True)
         bot_thread.start()
 
         flask_app.run(
             host="0.0.0.0",
-            port=10000
+            port=10000,
+            debug=False,
+            use_reloader=False
         )
 
     except Exception as e:
-
         print("\n========== CRASH ==========")
         print(str(e))
 
