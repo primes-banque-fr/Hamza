@@ -1,5 +1,5 @@
 python-telegram-bot==21.6
 requests
 gTTS
-python-dotenv
 vosk
+python-dotenv
