@@ -10,10 +10,7 @@ from utils.speech_to_text import voice_to_text
 # TEXT MESSAGE HANDLER
 # ==========================================
 
-async def handle_text_message(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = update.message.from_user
     user_text = update.message.text
@@ -24,12 +21,10 @@ async def handle_text_message(
 
     try:
 
-        # IA RESPONSE
         response = ask_ai(user_text)
 
         print("AI RESPONSE:", response)
 
-        # VOICE GENERATION
         audio = text_to_voice(response)
 
         print("VOICE FILE:", audio)
@@ -49,19 +44,15 @@ async def handle_text_message(
         print("TEXT HANDLER ERROR:", str(e))
 
         await update.message.reply_text(
-            "Je suis HMB Support AI. "
-            "Erreur temporaire."
+            "Je suis HMB Support AI. Erreur temporaire."
         )
 
 
 # ==========================================
-# VOICE MESSAGE HANDLER
+# VOICE MESSAGE HANDLER (VOSK DISABLED)
 # ==========================================
 
-async def handle_voice_message(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = update.message.from_user
 
@@ -78,24 +69,15 @@ async def handle_voice_message(
 
         await file.download_to_drive(path)
 
-        # VOICE → TEXT
+        # VOSK SUPPRIMÉ → fallback direct
         text = voice_to_text(path)
 
-        print("VOICE TO TEXT:", text)
+        print("VOICE CONVERTED TEXT:", text)
 
-        if not text:
-
-            await update.message.reply_text(
-                "Je n'ai pas compris votre message vocal."
-            )
-            return
-
-        # IA RESPONSE
         response = ask_ai(text)
 
         print("AI RESPONSE:", response)
 
-        # TEXT → VOICE
         audio = text_to_voice(response)
 
         print("VOICE FILE:", audio)
@@ -115,6 +97,5 @@ async def handle_voice_message(
         print("VOICE HANDLER ERROR:", str(e))
 
         await update.message.reply_text(
-            "Erreur vocale temporaire. "
-            "Veuillez réessayer."
-            )
+            "Erreur vocale temporaire. Réessayez."
+        )
